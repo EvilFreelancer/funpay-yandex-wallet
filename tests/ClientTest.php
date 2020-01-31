@@ -12,9 +12,63 @@ class ClientTest extends TestCase
      */
     private $client;
 
+    /**
+     * Test yandex wallet number
+     *
+     * @var string
+     */
+    private $number = '4100175017397';
+
     public function setUp(): void
     {
         $this->client = new Client();
+    }
+
+    /**
+     * Array of typical valid responses
+     *
+     * @return array
+     */
+    public function dataProviderValid(): array
+    {
+        return [
+            [
+                "Пароль: 7300\nСпишется 123,62р.\nПеревод на счет {$this->number}",
+                [
+                    'amount'    => 123.62,
+                    'currency'  => 'р.',
+                    'number'    => $this->number,
+                    'password:' => 7300,
+                ]
+            ],
+            [
+                "Спишется 123,62р.\nПароль: 7300\nПеревод на счет {$this->number}",
+                [
+                    'amount'    => 123.62,
+                    'currency'  => 'р.',
+                    'number'    => $this->number,
+                    'password:' => 7300,
+                ]
+            ],
+            [
+                "Перевод на счет {$this->number}\nСпишется 123,62\nПароль: 7300",
+                [
+                    'amount'    => 123.62,
+                    'currency'  => 'р.',
+                    'number'    => $this->number,
+                    'password:' => 7300,
+                ]
+            ],
+            [
+                "бла-счет {$this->number}\nбла-бло $123,62\nбла-код 7300",
+                [
+                    'amount'    => 123.62,
+                    'currency'  => '$',
+                    'number'    => $this->number,
+                    'password:' => 7300,
+                ]
+            ],
+        ];
     }
 
     /**
@@ -23,7 +77,7 @@ class ClientTest extends TestCase
     public function testValidateEx1(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->client->validate();
+        $this->client->validateParameters();
     }
 
     /**
@@ -33,9 +87,12 @@ class ClientTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->client->method = 'get';
-        $this->client->validate();
+        $this->client->validateParameters();
     }
 
+    /**
+     * Success validation
+     */
     public function testValidate(): void
     {
         $this->client->parameters = [
@@ -44,11 +101,16 @@ class ClientTest extends TestCase
         ];
 
         // Validate parameters
-        $result = $this->client->validate();
+        $result = $this->client->validateParameters();
 
         $this->assertTrue($result);
     }
 
+    /**
+     * Make dummy integration request, we just need to check what server returning any answer
+     *
+     * @throws \ErrorException
+     */
     public function testDoRequest(): void
     {
         $this->client->parameters = [
@@ -59,6 +121,20 @@ class ClientTest extends TestCase
         $result = $this->client->doRequest();
 
         // Here should be "incorrect account" response, but it's not important
-        $this->assertEquals('Кошелек Яндекс.Денег указан неверно.', $result);
+        $this->assertNotEmpty($result);
+    }
+
+    /**
+     * @dataProvider dataProviderValid
+     *
+     * @param string $response
+     * @param array  $result
+     *
+     * @throws \InvalidArgumentException|\ErrorException
+     */
+    public function testParseResponse(string $response, array $result): void
+    {
+        $parsed = $this->client->parseResponse($response);
+        $this->assertEquals($result, $parsed);
     }
 }
