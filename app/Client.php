@@ -125,7 +125,46 @@ class Client
      */
     public function parseResponse(string $response): array
     {
-        return [];
+        $count = mb_substr_count($response, "\n");
+
+        if ($count <= 1 || $count >= 3) {
+            throw new \ErrorException('Invalid response from remote, valid response should have only 3 lines: ' . $response);
+        }
+
+        // Convert string ot array of string
+        $strings = explode("\n", $response);
+
+        // Resulted array
+        $result = [];
+
+        foreach ($strings as $string) {
+
+            // Check for number
+            preg_match("/(.*) {$this->parameters['receiver']}/", $string, $matches);
+            if (!empty($matches)) {
+                $result['receiver'] = $this->parameters['receiver'];
+                continue;
+            }
+
+            // Check for password
+            preg_match('/(.*): (.*)/', $string, $matches);
+            if (!empty($matches)) {
+                $password           = $matches[2] ?? filter_var($string, FILTER_SANITIZE_NUMBER_INT);
+                $result['password'] = (int) $password;
+                unset($password);
+                continue;
+            }
+
+            // Check for sum and currency
+            preg_match('/(.*) ((\$)?)(\d+),(\d+)((kr|\$|£|€|р\.)?)/u', $string, $matches);
+            if (!empty($matches)) {
+                $result['amount']   = (float) ($matches[4] . '.' . $matches[5]);
+                $result['currency'] = !empty($matches[6]) ? $matches[6] : $matches[2]; // nope, check like: $matches[6] ?? $matches[2] is not useful here
+                continue;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -140,7 +179,7 @@ class Client
      */
     public function getResponse(array $parameters): array
     {
-        // Set parameters before bogin
+        // Set parameters before begin
         $this->parameters = $parameters;
 
         // Execute query to remote
