@@ -40,7 +40,11 @@
 
 First need install project:
 
-    composer create-project funpay-yandex-wallet
+    composer create-project evilfreelancer/funpay-yandex-wallet
+
+Change folder to root of project:
+
+    cd unpay-yandex-wallet
 
 Then run test query:
 
