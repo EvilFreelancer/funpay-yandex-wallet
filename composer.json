@@ -1,0 +1,21 @@
+{
+    "name": "evilfreelancer/funpay-yandex-emulator",
+    "description": "Test task by FunPay",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Paul Rock",
+            "email": "paul@drteam.rocks"
+        }
+    ],
+    "autoload": {
+        "App\\": "./app"
+    },
+    "autoload-dev": {
+        "App\\Tests\\": "./tests"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.5"
+    }
+}
